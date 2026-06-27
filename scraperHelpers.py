@@ -2,15 +2,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, ElementClickInterceptedException
-#import pygame
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
 import time
-import random
-import os
-import sys
 
 # Function to check stock availability (For ZARA)
 def check_stock_zara(driver, sizes_to_check):
@@ -113,10 +105,10 @@ def rossmannStockCheck(driver):
         print(f"Yok yok bu ürün anla yok kalmamış")
     return False
 
-
+# YENİLENMİŞ VE HATALARDAN ARINDIRILMIŞ BERSHKA KONTROLÜ
 def check_stock_bershka(driver, sizes_to_check):
     try:
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 15)
 
         # Handle cookie popup if present
         try:
@@ -127,25 +119,31 @@ def check_stock_bershka(driver, sizes_to_check):
         except Exception:
             print("No cookie alert or already closed.")
 
-        # Wait for the size list to load (dot list or legacy list)
         print("Waiting for the size list...")
-        wait.until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "[data-qa-anchor='productDetailSize']")
-            )
-        )
+        try:
+            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "[data-qa-anchor='productDetailSize'], .size-selector-container, ul.size-list")))
+        except:
+            print("Ana beden elementi bulunamadı, yine de doğrudan butonlar aranacak...")
 
-        # Allow extra time for dynamic class updates to finish
-        time.sleep(10)
+        time.sleep(3) 
 
-        size_buttons = driver.find_elements(By.CSS_SELECTOR, "button[data-qa-anchor='sizeListItem']")
+        size_buttons = driver.find_elements(By.CSS_SELECTOR, "button[data-qa-anchor='sizeListItem'], li.size-item button, button.ui-size-item")
+        
+        if not size_buttons:
+             size_buttons = driver.find_elements(By.CLASS_NAME, "product-size-info__main-label")
+
         sizes_found = {size: False for size in sizes_to_check}
         any_in_stock = None
 
         for button in size_buttons:
             try:
-                size_label_elem = button.find_element(By.CSS_SELECTOR, "span.text__label")
-                size_label = size_label_elem.text.strip()
+                try:
+                    size_label = button.find_element(By.CSS_SELECTOR, "span.text__label, .size-name").text.strip()
+                except:
+                    size_label = button.text.strip()
+                    
+                if not size_label:
+                    size_label = button.get_attribute("innerText").strip()
 
                 if size_label in sizes_to_check:
                     sizes_found[size_label] = True
@@ -153,13 +151,14 @@ def check_stock_bershka(driver, sizes_to_check):
                     class_attr = button.get_attribute("class") or ""
                     aria_disabled = button.get_attribute("aria-disabled") == "true"
                     is_disabled_attr = button.get_attribute("disabled") is not None
-                    is_disabled = "is-disabled" in class_attr or aria_disabled or is_disabled_attr
+                    
+                    is_disabled = "is-disabled" in class_attr or "out-of-stock" in class_attr or aria_disabled or is_disabled_attr
 
                     if is_disabled:
-                        print(f"{size_label} is out of stock.")
+                        print(f"Bershka: {size_label} is out of stock.")
                         any_in_stock = False if any_in_stock is None else any_in_stock
                     else:
-                        print(f"{size_label} is in stock!")
+                        print(f"Bershka: {size_label} is IN STOCK!")
                         return size_label
             except Exception as e:
                 print(f"Error processing size button: {e}")
@@ -168,8 +167,10 @@ def check_stock_bershka(driver, sizes_to_check):
         if not any(sizes_found.values()):
             print(f"⚠️ Sizes {', '.join(sizes_to_check)} not found.")
             return None
+            
         if any_in_stock is False:
             return False
+            
     except Exception as e:
         print(f"An error occurred while checking Bershka stock: {e}")
 
@@ -183,7 +184,6 @@ def watsonsChecker(driver):
         return not ("0 ürün") in text
     except:
         return False
-
 
 # Function to check stock availability for Mango
 def check_stock_mango(driver, sizes_to_check):
@@ -310,7 +310,7 @@ def check_stock_mango(driver, sizes_to_check):
     except Exception as e:
         print(f"An error occurred while checking Mango stock: {e}")
         return None
-# Bu kodu scraperHelpers.py dosyasının EN ALTINA yapıştır
+
 def check_stock_pullandbear(driver, sizes_to_check):
     try:
         wait = WebDriverWait(driver, 15)
@@ -354,6 +354,7 @@ def check_stock_pullandbear(driver, sizes_to_check):
         print(f"Pull&Bear hatası: {e}")
 
     return None
+
 # STRADIVARIUS STOK KONTROL FONKSİYONU
 def check_stock_stradivarius(driver, sizes_to_check):
     try:
@@ -370,12 +371,9 @@ def check_stock_stradivarius(driver, sizes_to_check):
 
         # Sayfanın ve beden listesinin yüklenmesini bekle
         print("Stradivarius: Beden listesi yüklenmesi bekleniyor...")
-        # Stradivarius genellikle bedenleri bir liste içinde tutar. Beden konteynerini bekliyoruz.
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".size-list, .product-size-info, [data-qa-anchor='productDetailSize']")))
-        time.sleep(3) # Dinamik içerik ve JavaScript'in tamamen yerleşmesi için ekstra bekleme
+        time.sleep(3) 
 
-        # Beden butonlarını/öğelerini bul (Inditex grubunda yaygın olan tag'ler)
-        # Stradivarius özel class'ları veya ortak QA tag'leri
         size_elements = driver.find_elements(By.CSS_SELECTOR, "li[data-qa-anchor='sizeListItem'], button[data-qa-anchor='sizeListItem'], .size-item")
         
         sizes_found = {size: False for size in sizes_to_check}
@@ -387,26 +385,21 @@ def check_stock_stradivarius(driver, sizes_to_check):
 
         for element in size_elements:
             try:
-                # Bedenin yazılı olduğu asıl text kısmını al
-                # Bazen içindeki bir <span> etiketinde olur, bazen direkt butonun kendisinde.
                 try:
                     size_label = element.find_element(By.CSS_SELECTOR, "span.text__label, .size-name, span").text.strip()
                 except NoSuchElementException:
                     size_label = element.text.strip()
                 
-                # Eğer çektiğimiz text boşsa, üst elementin text'ine bak
                 if not size_label:
                     size_label = element.get_attribute("innerText").strip()
 
                 if size_label in sizes_to_check:
                     sizes_found[size_label] = True
 
-                    # Stok durumunu kontrol et
                     class_attr = element.get_attribute("class") or ""
                     aria_disabled = element.get_attribute("aria-disabled") == "true"
                     is_disabled_attr = element.get_attribute("disabled") is not None
                     
-                    # Stradivarius'ta tükenen ürünler genellikle şu class'ları veya özellikleri alır
                     is_disabled = "is-disabled" in class_attr or "out-of-stock" in class_attr or "sold-out" in class_attr or aria_disabled or is_disabled_attr
 
                     if is_disabled:
@@ -414,7 +407,7 @@ def check_stock_stradivarius(driver, sizes_to_check):
                         any_in_stock = False if any_in_stock is None else any_in_stock
                     else:
                         print(f"Stradivarius: {size_label} bedeni STOKTA!")
-                        return size_label # Stok bulundu, bedeni döndür
+                        return size_label 
             except Exception as e:
                 print(f"Stradivarius: Beden öğesi işlenirken hata oluştu: {e}")
                 continue
@@ -423,7 +416,6 @@ def check_stock_stradivarius(driver, sizes_to_check):
             print(f"Stradivarius: Aradığın bedenler ({', '.join(sizes_to_check)}) sayfada bulunamadı.")
             return None
 
-        # Eğer aranan bedenler sayfada var ama hiçbiri stokta yoksa
         if any_in_stock is False:
             return False
 
@@ -431,4 +423,3 @@ def check_stock_stradivarius(driver, sizes_to_check):
         print(f"Stradivarius: Stok kontrolü sırasında genel bir hata oluştu: {e}")
 
     return None
-
