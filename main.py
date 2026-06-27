@@ -1,8 +1,8 @@
 import json
 import time
 import requests
-from selenium import webdriver
 import os
+from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
@@ -12,8 +12,8 @@ from scraperHelpers import check_stock_zara, check_stock_bershka, check_stock_ma
 with open("config.json", "r") as config_file:
     config = json.load(config_file)
 
-urls_to_check = config["urls"]
-sizes_to_check = config["sizes_to_check"]
+urls_to_check = config.get("urls", [])
+sizes_to_check = config.get("sizes_to_check", [])
 
 # TELEGRAM BİLGİLERİNİ GİZLİDEN AL
 BOT_API = os.environ.get("TELEGRAM_API")
@@ -21,6 +21,7 @@ CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 def send_telegram_message(message):
     if not BOT_API or not CHAT_ID:
+        print("Telegram API veya Chat ID eksik!")
         return
     url = f"https://api.telegram.org/bot{BOT_API}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message}
@@ -29,7 +30,7 @@ def send_telegram_message(message):
     except Exception as e:
         print(f"Telegram hatası: {e}")
 
-# TARAYICI AYARLARI (GÜNCELLENDİ)
+# TARAYICI AYARLARI
 chrome_options = Options()
 chrome_options.add_argument("--headless=new") # Yeni headless modu
 chrome_options.add_argument("--no-sandbox")
@@ -50,13 +51,19 @@ driver = webdriver.Chrome(service=service, options=chrome_options)
 # Selenium'un bot olarak algılanmasını önlemek için JS enjeksiyonu
 driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-print("Bot başlatıldı (v2.0), kontroller başlıyor...")
+print("Bot başlatıldı (v2.1), kontroller başlıyor...")
 
 try:
     for item in urls_to_check:
         try:
             url = item.get("url")
             store = item.get("store")
+            
+            # BOŞ URL KONTROLÜ (Çökmeyi engelleyen kritik kısım)
+            if not url or url.strip() == "":
+                print(f"Uyarı: {store} mağazası için link boş bırakılmış, atlanıyor...")
+                continue
+                
             print(f"Kontrol ediliyor: {store} - {url}")
             
             driver.get(url)
@@ -70,7 +77,6 @@ try:
                 size_in_stock = check_stock_bershka(driver, sizes_to_check)
             elif store == "mango":
                 size_in_stock = check_stock_mango(driver, sizes_to_check)
-            # YENİ EKLENEN KISIM:
             elif store == "pullandbear":
                 size_in_stock = check_stock_pullandbear(driver, sizes_to_check)
             elif store == "stradivarius":
