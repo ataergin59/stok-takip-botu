@@ -26,74 +26,56 @@ def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{BOT_API}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message}
     try:
-        requests.post(url, data=payload, timeout=10)
+        response = requests.post(url, data=payload, timeout=10)
+        if response.status_code == 200:
+            print("✅ Mesaj gönderildi.")
+        else:
+            print(f"❌ Telegram API hatası: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"Telegram hatası: {e}")
+        print(f"Telegram bağlantı hatası: {e}")
 
 # TARAYICI AYARLARI
 chrome_options = Options()
-chrome_options.add_argument("--headless=new") # Yeni headless modu
+chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--window-size=1920,1080")
-# Bot olduğunu gizleyen kritik ayarlar:
-chrome_options.add_argument("--disable-blink-features=AutomationControlled") 
-chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-chrome_options.add_experimental_option('useAutomationExtension', False)
-# Daha güncel bir User-Agent:
 chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
 
-# Driver kurulumu
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service, options=chrome_options)
-
-# Selenium'un bot olarak algılanmasını önlemek için JS enjeksiyonu
 driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-print("Bot başlatıldı (v2.1), kontroller başlıyor...")
+print("Bot başlatıldı (v2.2 - Boş URL temizleyicili)...")
 
 try:
     for item in urls_to_check:
+        url = item.get("url")
+        store = item.get("store")
+        
+        # BOŞ URL TEMİZLEME: URL boşsa veya link değilse doğrudan atla
+        if not url or len(url) < 10:
+            continue
+            
         try:
-            url = item.get("url")
-            store = item.get("store")
-            
-            # BOŞ URL KONTROLÜ (Çökmeyi engelleyen kritik kısım)
-            if not url or url.strip() == "":
-                print(f"Uyarı: {store} mağazası için link boş bırakılmış, atlanıyor...")
-                continue
-                
             print(f"Kontrol ediliyor: {store} - {url}")
-            
             driver.get(url)
-            time.sleep(7) # Yükleme süresini biraz artırdık
+            time.sleep(5) 
             
             size_in_stock = None
-            
-            if store == "zara":
-                size_in_stock = check_stock_zara(driver, sizes_to_check)
-            elif store == "bershka":
-                size_in_stock = check_stock_bershka(driver, sizes_to_check)
-            elif store == "mango":
-                size_in_stock = check_stock_mango(driver, sizes_to_check)
-            elif store == "pullandbear":
-                size_in_stock = check_stock_pullandbear(driver, sizes_to_check)
-            elif store == "stradivarius":
-                size_in_stock = check_stock_stradivarius(driver, sizes_to_check)    
+            if store == "zara": size_in_stock = check_stock_zara(driver, sizes_to_check)
+            elif store == "bershka": size_in_stock = check_stock_bershka(driver, sizes_to_check)
+            elif store == "mango": size_in_stock = check_stock_mango(driver, sizes_to_check)
+            elif store == "pullandbear": size_in_stock = check_stock_pullandbear(driver, sizes_to_check)
+            elif store == "stradivarius": size_in_stock = check_stock_stradivarius(driver, sizes_to_check)
             
             if size_in_stock:
-                msg = f"🚨 STOK BULUNDU! 🚨\n\nMağaza: {store.upper()}\nBeden: {size_in_stock}\nLink: {url}"
-                print(msg)
-                send_telegram_message(msg)
+                send_telegram_message(f"🚨 STOK BULUNDU!\nMağaza: {store.upper()}\nBeden: {size_in_stock}\nLink: {url}")
             else:
                 print(f"❌ {store} - Stok yok.")
-                
-        except Exception as inner_e:
-            print(f"Link Hatası ({store}): {inner_e}")
-
-except Exception as e:
-    print(f"Genel hata: {e}")
+        except Exception as e:
+            print(f"Hata oluştu ({store}): {e}")
 
 finally:
     driver.quit()
