@@ -145,8 +145,8 @@ print("🚀 Bot başlatıldı (Anti-Bot Korumalı Sürüm)...")
 send_telegram_message("🤖 Stok takip botu başlatıldı! Anti-bot sistemi aktif.")
 
 try:
-    # Eski kodda webdriver.Chrome kullanıyorduk, şimdi uc.Chrome kullanıyoruz
-    driver = uc.Chrome(options=chrome_options)
+    # Sürücü ve tarayıcı sürümlerini eşitlemek için version_main eklendi
+    driver = uc.Chrome(options=chrome_options, version_main=149)
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
     for item in urls_to_check:
