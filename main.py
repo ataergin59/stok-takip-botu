@@ -161,6 +161,15 @@ try:
             driver.get(url)
             time.sleep(7) # Anti-bot ekranını geçmesi için süreyi biraz uzattık
             
+            # --- YENİ EKLENEN TEŞHİS SATIRLARI ---
+            print(f"📄 O anki Sayfa Başlığı: {driver.title}")
+            try:
+                body_text = driver.find_element(By.TAG_NAME, "body").text[:200]
+                print(f"👀 Ekranda Görünen İlk Yazılar: {body_text.replace(chr(10), ' ')}")
+            except:
+                print("👀 Ekranda okunabilir bir metin bulunamadı!")
+            # ------------------------------------
+            
             size_in_stock = None
             if store == "zara": size_in_stock = check_stock_zara(driver, sizes_to_check)
             elif store == "bershka": size_in_stock = check_stock_bershka(driver, sizes_to_check)
