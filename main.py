@@ -3,7 +3,6 @@ import json
 import time
 import requests
 from dotenv import load_dotenv
-from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
@@ -116,8 +115,12 @@ def check_stock_stradivarius(driver, sizes_to_check):
     except: pass
     return None
 
+import undetected_chromedriver as uc
+
+# ... (Yukarıdaki fonksiyonların ve Telegram ayarların tamamen aynı kalacak) ...
+
 # ==========================================
-# 3. ANA ÇALIŞMA BLOĞU
+# 3. ANA ÇALIŞMA BLOĞU (GÜNCELLENDİ)
 # ==========================================
 try:
     with open("config.json", "r") as config_file:
@@ -129,42 +132,34 @@ except FileNotFoundError:
 urls_to_check = config.get("urls", [])
 sizes_to_check = config.get("sizes_to_check", [])
 
-# TARAYICI AYARLARI
-chrome_options = Options()
-# Hata ayıklama (debug) için headless mod şu an kapalı. Tarayıcı açılacak.
-# TARAYICI AYARLARI
-chrome_options = Options()
-chrome_options.add_argument("--headless") # "=new" eklentisini sildik, klasik headless sunucuda daha stabil
+# ANTI-BOT TARAYICI AYARLARI
+chrome_options = uc.ChromeOptions()
+chrome_options.add_argument("--headless") # GitHub Actions için arka planda çalışma
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--disable-software-rasterizer") # Sanal makinelerdeki grafik çökmelerini engeller
-chrome_options.add_argument("--disable-extensions") # Eklentileri kapatıp belleği rahatlatır
 chrome_options.add_argument("--window-size=1920,1080")
-chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
 
-service = Service(ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service, options=chrome_options)
-driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+print("🚀 Bot başlatıldı (Anti-Bot Korumalı Sürüm)...")
 
-print("🚀 Bot başlatıldı (Test Sürümü - Tarayıcı Görünür)...")
-
-# BAĞLANTI TESTİ İÇİN İLK MESAJ
-send_telegram_message("🤖 Stok takip botu başlatıldı! Bildirim sistemi aktif.")
+# Bağlantı testi mesajı
+send_telegram_message("🤖 Stok takip botu başlatıldı! Anti-bot sistemi aktif.")
 
 try:
+    # Eski kodda webdriver.Chrome kullanıyorduk, şimdi uc.Chrome kullanıyoruz
+    driver = uc.Chrome(options=chrome_options)
+    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
     for item in urls_to_check:
         url = item.get("url")
         store = item.get("store")
         
-        # Boş linkleri atla
         if not url or len(url) < 10:
             continue
             
         try:
             print(f"\n🔍 Kontrol ediliyor: {store.upper()} - {url}")
             driver.get(url)
-            time.sleep(5) 
+            time.sleep(7) # Anti-bot ekranını geçmesi için süreyi biraz uzattık
             
             size_in_stock = None
             if store == "zara": size_in_stock = check_stock_zara(driver, sizes_to_check)
@@ -183,5 +178,7 @@ try:
             print(f"❌ Hata oluştu ({store}): {e}")
 
 finally:
-    driver.quit()
+    # driver tanımlanmadan kod patlarsa quit() hata vermesin diye kontrol ekledik
+    if 'driver' in locals():
+        driver.quit()
     print("\n🏁 İşlem tamamlandı ve tarayıcı kapatıldı.")
