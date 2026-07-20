@@ -1,109 +1,27 @@
 {
-    "urls": [
-        {
-            "store": "stradivarius",
+    "urls": [                                                                                                                        
+         {  "store": "stradivarius",
             "url": ""
         },
-        {
-            "store": "stradivarius",
-            "url": ""
-        },
-        {
-            "store": "stradivarius",
-            "url": ""
-        },
-        {
-            "store": "stradivarius",
-            "url": "https://www.stradivarius.com/tr/tr/c0p501728240.html?colorId=003"
-        },
-        {
-            "store": "stradivarius",
-            "url": ""
-        },
-        {
-            "store": "stradivarius",
-            "url": ""
-        },
-        {
-            "store": "pullandbear",
-            "url": ""
-        },
-        {
-            "store": "pullandbear",
-            "url": ""
-        },
-        {
-            "store": "pullandbear",
-            "url": ""
-        },
-        {
-            "store": "pullandbear",
-            "url": ""
-        },
+   
         {
             "store": "mango",
             "url": ""
         },
         {
             "store": "bershka",
-            "url": "https://www.bershka.com/tr/c0p206370805.html?colorId=700" 
+            "url": "https://www.bershka.com/tr/bershkastyle/993722664.html?gender=men" 
         }, 
         {
             "store": "bershka",
             "url": "https://www.bershka.com/tr/c0p205577392.html?colorId=717" 
-        }, 
-        {
-            "store": "bershka",
-            "url": "https://www.bershka.com/tr/c1010850196p218801661.html?colorId=505" 
-        },
-        {
-            "store": "bershka",
-            "url": "https://www.bershka.com/tr/c1010747948p231815940.html?colorId=401" 
-        }, 
-        {
-            "store": "bershka",
-            "url": "https://www.bershka.com/tr/k%C4%B1sa-kollu-racing-g%C3%B6mlek-c0p229737327.html?colorId=401" 
-        }, 
-        {
-            "store": "bershka",
-            "url": "" 
-        }, 
-        {
-            "store": "bershka",
-            "url": "" 
-        }, 
-        {
-            "store": "bershka",
-            "url": "" 
-        }, 
-            
-        {
-            "store": "bershka",
-            "url": "" 
-        },
-        { 
-            "store": "bershka", 
-            "url": ""
-        }, 
-        
-         {
-            "store": "bershka",
-            "url": ""
-        },
-        
-         {
-            "store": "bershka",
-            "url": ""
         },
         
         {
             "store": "zara",
             "url": "https://www.zara.com/tr/tr/buzgulu-poplin-top-p02256260.html?v1=525111959&utm_campaign=productShare&utm_medium=mobile_sharing_iOS&utm_source=red_social_movil"
         }, 
-        {
-            "store": "zara",
-            "url": "https://www.zara.com/tr/tr/pamuklu-keten-relaxed-fit-pantolon-p04470460.html?v1=545461209&v2=1885841" 
-        }, 
+        
         {
             "store": "zara",
             "url": "" 
