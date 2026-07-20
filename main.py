@@ -2,13 +2,12 @@ import os
 import json
 import time
 import requests
+import undetected_chromedriver as uc
 from dotenv import load_dotenv
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 # ==========================================
 # 1. GİZLİ BİLGİLERİ YÜKLEME (.env dosyasından)
@@ -20,7 +19,6 @@ CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 def send_telegram_message(message):
     print("Telegram'a mesaj gönderme tetiklendi...")
-    
     if not BOT_API or not CHAT_ID:
         print("❌ HATA: Telegram API veya Chat ID bulunamadı! Lütfen .env dosyasını kontrol et.")
         return
@@ -38,15 +36,17 @@ def send_telegram_message(message):
         print(f"❌ Telegram Bağlantı Hatası: {e}")
 
 # ==========================================
-# 2. MAĞAZA STOK KONTROL FONKSİYONLARI
+# 2. GİYİM MAĞAZALARI İÇİN STOK KONTROL FONKSİYONLARI
 # ==========================================
+
 def check_stock_zara(driver, sizes_to_check):
     try:
         wait = WebDriverWait(driver, 15)
         try:
             accept = wait.until(EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler")))
             accept.click()
-        except: pass
+        except: 
+            pass
         
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "size-selector-sizes")))
         size_elements = driver.find_elements(By.CSS_SELECTOR, "li[data-qa-qualifier='size-selector-sizes-size']")
@@ -59,9 +59,10 @@ def check_stock_zara(driver, sizes_to_check):
                     action = button.get_attribute("data-qa-action")
                     if action in ["size-in-stock", "size-low-on-stock"]:
                         return label
-            except: continue
+            except: 
+                continue
     except Exception as e:
-        print(f"⚠️ Zara Element Bulunamadı: {type(e).__name__}")
+        print(f"⚠️ Zara Element Bulunamadı: {e}")
     return None
 
 def check_stock_bershka(driver, sizes_to_check):
@@ -75,9 +76,10 @@ def check_stock_bershka(driver, sizes_to_check):
                     classes = btn.get_attribute("class") or ""
                     if "is-disabled" not in classes and btn.get_attribute("disabled") is None:
                         return label
-            except: continue
+            except: 
+                continue
     except Exception as e:
-        print(f"⚠️ Bershka Element Bulunamadı: {type(e).__name__}")
+        print(f"⚠️ Bershka Element Bulunamadı: {e}")
     return None
 
 def check_stock_mango(driver, sizes_to_check):
@@ -89,7 +91,7 @@ def check_stock_mango(driver, sizes_to_check):
                 if "sizeAvailable" in btn.get_attribute("id") and btn.get_attribute("aria-disabled") == "false":
                     return label
     except Exception as e:
-        print(f"⚠️ Mango Element Bulunamadı: {type(e).__name__}")
+        print(f"⚠️ Mango Element Bulunamadı: {e}")
     return None
 
 def check_stock_pullandbear(driver, sizes_to_check):
@@ -100,7 +102,8 @@ def check_stock_pullandbear(driver, sizes_to_check):
             if label in sizes_to_check:
                 if "is-disabled" not in btn.get_attribute("class"):
                     return label
-    except: pass
+    except Exception as e:
+        print(f"⚠️ Pull&Bear Element Bulunamadı: {e}")
     return None
 
 def check_stock_stradivarius(driver, sizes_to_check):
@@ -112,82 +115,74 @@ def check_stock_stradivarius(driver, sizes_to_check):
                 classes = el.get_attribute("class") or ""
                 if "is-disabled" not in classes and "sold-out" not in classes:
                     return label
-    except: pass
+    except Exception as e:
+        print(f"⚠️ Stradivarius Element Bulunamadı: {e}")
     return None
 
-import undetected_chromedriver as uc
-
-# ... (Yukarıdaki fonksiyonların ve Telegram ayarların tamamen aynı kalacak) ...
-
 # ==========================================
-# 3. ANA ÇALIŞMA BLOĞU (GÜNCELLENDİ)
+# 3. ANA ÇALIŞMA BLOĞU
 # ==========================================
-try:
-    with open("config.json", "r") as config_file:
-        config = json.load(config_file)
-except FileNotFoundError:
-    print("❌ config.json bulunamadı! Dosyanın main.py ile aynı klasörde olduğundan emin ol.")
-    exit()
+if __name__ == "__main__":
+    try:
+        with open("config.json", "r", encoding="utf-8") as config_file:
+            config = json.load(config_file)
+    except FileNotFoundError:
+        print("❌ config.json bulunamadı! Dosyanın main.py ile aynı klasörde olduğundan emin ol.")
+        exit()
 
-urls_to_check = config.get("urls", [])
-sizes_to_check = config.get("sizes_to_check", [])
+    urls_to_check = config.get("urls", [])
+    sizes_to_check = config.get("sizes_to_check", [])
 
-# ANTI-BOT TARAYICI AYARLARI
-chrome_options = uc.ChromeOptions()
-chrome_options.add_argument("--headless") # GitHub Actions için arka planda çalışma
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--window-size=1920,1080")
+    # ANTI-BOT TARAYICI AYARLARI
+    chrome_options = uc.ChromeOptions()
+    chrome_options.add_argument("--headless=new") # Arka planda stabil çalışması için
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--window-size=1920,1080")
 
-print("🚀 Bot başlatıldı (Anti-Bot Korumalı Sürüm)...")
+    print("🚀 Giyim Stok Botu Başlatıldı...")
+    send_telegram_message("🤖 Giyim stok takip botu başlatıldı ve tarama yapılıyor!")
 
-# Bağlantı testi mesajı
-send_telegram_message("🤖 Stok takip botu başlatıldı! Anti-bot sistemi aktif.")
+    driver = None
+    try:
+        driver = uc.Chrome(options=chrome_options)
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-try:
-    # Sürücü ve tarayıcı sürümlerini eşitlemek için version_main eklendi
-    driver = uc.Chrome(options=chrome_options, version_main=149)
-    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-
-    for item in urls_to_check:
-        url = item.get("url")
-        store = item.get("store")
-        
-        if not url or len(url) < 10:
-            continue
+        for item in urls_to_check:
+            url = item.get("url")
+            store = item.get("store")
             
-        try:
-            print(f"\n🔍 Kontrol ediliyor: {store.upper()} - {url}")
-            driver.get(url)
-            time.sleep(7) # Anti-bot ekranını geçmesi için süreyi biraz uzattık
-            
-            # --- YENİ EKLENEN TEŞHİS SATIRLARI ---
-            print(f"📄 O anki Sayfa Başlığı: {driver.title}")
-            try:
-                body_text = driver.find_element(By.TAG_NAME, "body").text[:200]
-                print(f"👀 Ekranda Görünen İlk Yazılar: {body_text.replace(chr(10), ' ')}")
-            except:
-                print("👀 Ekranda okunabilir bir metin bulunamadı!")
-            # ------------------------------------
-            
-            size_in_stock = None
-            if store == "zara": size_in_stock = check_stock_zara(driver, sizes_to_check)
-            elif store == "bershka": size_in_stock = check_stock_bershka(driver, sizes_to_check)
-            elif store == "mango": size_in_stock = check_stock_mango(driver, sizes_to_check)
-            elif store == "pullandbear": size_in_stock = check_stock_pullandbear(driver, sizes_to_check)
-            elif store == "stradivarius": size_in_stock = check_stock_stradivarius(driver, sizes_to_check)
-            
-            if size_in_stock:
-                print(f"🎉 STOK BULUNDU: {size_in_stock} beden. Telegram'a iletiliyor...")
-                send_telegram_message(f"🚨 STOK BULUNDU!\nMağaza: {store.upper()}\nBeden: {size_in_stock}\nLink: {url}")
-            else:
-                print(f"❌ {store.upper()} - Stok yok veya element bulunamadı.")
+            if not url or len(url) < 10:
+                continue
                 
-        except Exception as e:
-            print(f"❌ Hata oluştu ({store}): {e}")
+            try:
+                print(f"\n🔍 Kontrol ediliyor: {store.upper()} -> {url}")
+                driver.get(url)
+                time.sleep(7) # Bot korumasını atlatmak için bekleme payı
+                
+                size_in_stock = None
+                
+                if store == "zara": 
+                    size_in_stock = check_stock_zara(driver, sizes_to_check)
+                elif store == "bershka": 
+                    size_in_stock = check_stock_bershka(driver, sizes_to_check)
+                elif store == "mango": 
+                    size_in_stock = check_stock_mango(driver, sizes_to_check)
+                elif store == "pullandbear": 
+                    size_in_stock = check_stock_pullandbear(driver, sizes_to_check)
+                elif store == "stradivarius": 
+                    size_in_stock = check_stock_stradivarius(driver, sizes_to_check)
+                
+                if size_in_stock:
+                    print(f"🎉 STOK BULUNDU: {size_in_stock} beden. Telegram'a iletiliyor...")
+                    send_telegram_message(f"🚨 STOK BULUNDU!\nMağaza: {store.upper()}\nBeden: {size_in_stock}\nLink: {url}")
+                else:
+                    print(f"❌ {store.upper()} - Aranan beden(ler)de stok yok.")
+                    
+            except Exception as e:
+                print(f"❌ Ürün taranırken hata oluştu ({store}): {e}")
 
-finally:
-    # driver tanımlanmadan kod patlarsa quit() hata vermesin diye kontrol ekledik
-    if 'driver' in locals():
-        driver.quit()
-    print("\n🏁 İşlem tamamlandı ve tarayıcı kapatıldı.")
+    finally:
+        if driver:
+            driver.quit()
+        print("\n🏁 İşlem tamamlandı, tarayıcı kapatıldı.")
