@@ -6,7 +6,7 @@ import undetected_chromedriver as uc
 from dotenv import load_dotenv
 
 # scraper.py dosyasından fonksiyonları içeri aktarıyoruz
-from scraper import (
+from scraperHelpers.py import (
     check_stock_zara, 
     check_stock_bershka, 
     check_stock_mango, 
