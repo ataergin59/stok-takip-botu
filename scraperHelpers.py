@@ -11,7 +11,8 @@ def check_stock_zara(driver, sizes_to_check):
         try:
             accept = wait.until(EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler")))
             accept.click()
-        except: pass
+        except: 
+            pass
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, "size-selector-sizes")))
         
         size_elements = driver.find_elements(By.CSS_SELECTOR, "li[data-qa-qualifier='size-selector-sizes-size']")
@@ -23,7 +24,8 @@ def check_stock_zara(driver, sizes_to_check):
                     action = button.get_attribute("data-qa-action")
                     if action in ["size-in-stock", "size-low-on-stock"]:
                         return label
-            except: continue
+            except: 
+                continue
     except Exception as e:
         print(f"Zara hata: {e}")
     return None
@@ -40,7 +42,8 @@ def check_stock_bershka(driver, sizes_to_check):
                     classes = btn.get_attribute("class") or ""
                     if "is-disabled" not in classes and btn.get_attribute("disabled") is None:
                         return label
-            except: continue
+            except: 
+                continue
     except Exception as e:
         print(f"Bershka hata: {e}")
     return None
@@ -67,7 +70,8 @@ def check_stock_pullandbear(driver, sizes_to_check):
             if label in sizes_to_check:
                 if "is-disabled" not in btn.get_attribute("class"):
                     return label
-    except: pass
+    except: 
+        pass
     return None
 
 # --- STRADIVARIUS ---
@@ -80,23 +84,6 @@ def check_stock_stradivarius(driver, sizes_to_check):
                 classes = el.get_attribute("class") or ""
                 if "is-disabled" not in classes and "sold-out" not in classes:
                     return label
-    except: pass
+    except: 
+        pass
     return None
-
-# --- DİĞER YARDIMCI FONKSİYONLAR (Eski fonksiyonlarını korudum) ---
-def rossmannStockCheck(driver):
-    wait = WebDriverWait(driver, 40)
-    try:
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "product-add-form")))
-        button = driver.find_element(By.XPATH, "//button[@type='submit' and contains(., 'Sepete Ekle')]")
-        if button:
-            driver.execute_script("arguments[0].click();", button)
-            return True
-    except: return False
-
-def watsonsChecker(driver):
-    wait = WebDriverWait(driver, 40)
-    try:
-        element = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "product-grid-manager__view-mount")))
-        return not ("0 ürün") in element[0].text.strip()
-    except: return False
