@@ -5,7 +5,7 @@ import requests
 import undetected_chromedriver as uc
 from dotenv import load_dotenv
 
-from ScraperHelpers import (
+from scraperHelpers import (
     check_stock_zara, 
     check_stock_bershka, 
     check_stock_mango, 
